@@ -131,7 +131,9 @@ The promise must be **genuinely true** - Claude cannot lie to escape the loop.
 
 A skill that answers one merchant question with the merchant's own Shopify data: what changed, when, and was it the thing they suspect? It works with a suspect ("sales dropped since the theme publish") or without one ("CVR dropped in the last 30 days and we can't figure out why").
 
-**Requires:** the Shopify MCP connected to the store (for `run-analytics-query`), and a Claude client that can publish HTML artifacts.
+**Requires:** either the Shopify MCP connected to the store, or a read-only Admin API access token (a custom app with `read_reports`) exported as `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN`; and a Claude client that can publish HTML artifacts.
+
+**Read-only by construction.** With a token, the skill never runs a mutation, and that is enforced in three places rather than promised in a prompt: the token should carry no `write_*` scope, so Shopify rejects writes; the bundled `scripts/shopifyql.mjs` sends only fixed query documents and exits before querying if the token has any write scope; and the plugin's PreToolUse hook blocks any shell command that carries a GraphQL mutation to a Shopify Admin API.
 
 **How it works:**
 1. Asks for the claim verbatim and any known changes, then builds an event timeline in store-local time

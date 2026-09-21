@@ -151,6 +151,11 @@ FROM sales
 
 **Shopify MCP** (preferred when the store is connected): `run-analytics-query` with the query string; `switch-shop` if several stores are connected. Returns a table and a chart preview. Copy the raw rows into `DATA` in the report; do not retype numbers.
 
-**GraphQL fallback** (an app with its own Admin API access): the `shopifyqlQuery(query:)` field on the Admin API. Needs the `read_reports` scope. Reads production data; get the user's go-ahead first.
+**Access token** (a merchant-provided custom app, or any Admin API token): only through `scripts/shopifyql.mjs`. It sends the fixed `shopifyqlQuery` document and nothing else, and it exits before querying if the token has any `write_*` scope. `--check` prints the scopes; `--csv` prints CSV. Set `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN` in the environment. Reads production data; get the user's go-ahead first.
+
+```
+node scripts/shopifyql.mjs --check
+node scripts/shopifyql.mjs "FROM sales SHOW orders, total_sales TIMESERIES day SINCE -60d UNTIL today ORDER BY day ASC"
+```
 
 The ShopifyQL editor in Shopify Analytics accepts the same strings, which is what makes every query in the report reproducible by the merchant.
