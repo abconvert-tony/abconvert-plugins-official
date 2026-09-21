@@ -9,7 +9,7 @@
 - Segment (step 5)
 - Rule the suspect in or out (step 6)
 - Field notes
-- Running queries
+- Running queries (MCP, token path and its read-only guarantees)
 
 Queries that ran cleanly in past reports. Dates are placeholders from one report; replace them. Field names are the ones the docs listed on 2026-09-16; re-check against `search_docs_chunks` (dataset name + fields) before use, because datasets gain and rename fields between API versions. Docs win over this file.
 
@@ -157,5 +157,15 @@ FROM sales
 node scripts/shopifyql.mjs --check
 node scripts/shopifyql.mjs "FROM sales SHOW orders, total_sales TIMESERIES day SINCE -60d UNTIL today ORDER BY day ASC"
 ```
+
+### Read-only by construction (token path)
+
+With a token, the skill only ever queries. It never runs a mutation, and that is enforced rather than promised:
+
+- **The token cannot write.** Ask the merchant for a custom app with `read_reports` only (Settings, Apps and sales channels, Develop apps). Shopify rejects any mutation from a token without a `write_*` scope, whatever the caller sends.
+- **The script cannot send one.** `scripts/shopifyql.mjs` sends only three fixed GraphQL documents (access scopes, shop info, `shopifyqlQuery`) and passes the ShopifyQL string as a variable, so no input can become a mutation. Before the first query it reads the token's scopes and exits if any `write_*` scope is present, because a token that can write is the wrong token for an analytics job. Run `node scripts/shopifyql.mjs --check` first and show the merchant the scope list.
+- **No raw GraphQL from the shell.** Never write a `curl` or `fetch` against `/admin/api/` yourself; every query goes through the script. This plugin ships a hook that blocks any shell command carrying a mutation to an Admin API, as a backstop.
+
+The token lives in the environment (`SHOPIFY_STORE`, `SHOPIFY_ACCESS_TOKEN`) and is set by the merchant or the user, never pasted into chat, a file, or the report.
 
 The ShopifyQL editor in Shopify Analytics accepts the same strings, which is what makes every query in the report reproducible by the merchant.

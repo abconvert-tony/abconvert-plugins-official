@@ -12,7 +12,7 @@ Two starting points, same method:
 - **With a suspect.** "Sales dropped since the test / the theme publish / the new app." Check the claim and the suspect's mechanism against the data.
 - **Without one.** "CVR dropped in the last 30 days and we can't figure out why." Find the day and hour the metric broke, which funnel step and segment moved, then ask what changed at that time.
 
-Worked example. A merchant paused an A/B test because sales dropped. The report showed the test window held the best sales day in six weeks and flat page speed, and the real break was cart-to-checkout halving at about 10:00 am on the fifth day, 3.5 days after launch, across every channel. Verdict: not the test; check the store's change history for that morning.
+Worked example. A merchant blamed an A/B test for a sales drop. The test window held the best sales day in six weeks and page speed was flat; the real break was cart-to-checkout halving at 10:00 am on day five, storewide. Verdict: not the test; check the change history for that morning.
 
 ## Checklist
 
@@ -36,19 +36,9 @@ Ask these in one message and proceed with whatever comes back. Only the data pat
 1. **The claim, verbatim.** Which metric, and since when. "CVR dropped in the last 30 days" has three testable parts: the metric, the window, and the implied "it was fine before". The report checks all three rather than assuming them.
 2. **Known events**, with dates and times. Offer the usual list so the merchant can recognise one: A/B test start or pause, theme publish or edit, app installed or removed, checkout or payment settings, shipping rates, discount start or end, price change, product launch or stockout, ad campaign or spend change, domain or redirect change, Shopify plan or checkout upgrade. "Nothing changed" is an answer worth writing down, because the data usually disagrees.
 3. **Activity log access.** Shopify's store activity log (in admin Settings) lists edits by time. The report's last action is usually "match this hour against that log", so ask whether they can open it.
-4. **Data path.** Either the Shopify MCP's `run-analytics-query` tool on the connected store (`switch-shop` first if several are connected), or an Admin API access token used only through `scripts/shopifyql.mjs` (see "Read-only by construction" below). Both read the store's production analytics, so get a clear yes before the first query.
+4. **Data path.** Either the Shopify MCP's `run-analytics-query` tool on the connected store (`switch-shop` first if several are connected), or an Admin API access token used only through `scripts/shopifyql.mjs`, never through raw GraphQL; the token path and its read-only guarantees are in `references/shopifyql.md` under "Running queries". Both read the store's production analytics, so get a clear yes before the first query.
 
 Timezone comes from `get-shop-info`, or from `node scripts/shopifyql.mjs --shop` when only a token is available. ShopifyQL day rows are store-local; hour rows are UTC. Convert once and use store-local everywhere, including the merchant's own dates.
-
-### Read-only by construction
-
-With a token, the skill only ever queries. It never runs a mutation, and that is enforced rather than promised:
-
-- **The token cannot write.** Ask the merchant for a custom app with `read_reports` only (Settings, Apps and sales channels, Develop apps). Shopify rejects any mutation from a token without a `write_*` scope, whatever the caller sends.
-- **The script cannot send one.** `scripts/shopifyql.mjs` sends only three fixed GraphQL documents (access scopes, shop info, `shopifyqlQuery`) and passes the ShopifyQL string as a variable, so no input can become a mutation. Before the first query it reads the token's scopes and exits if any `write_*` scope is present, because a token that can write is the wrong token for an analytics job. Run `node scripts/shopifyql.mjs --check` first and show the merchant the scope list.
-- **No raw GraphQL from the shell.** Never write a `curl` or `fetch` against `/admin/api/` yourself; every query goes through the script. This plugin ships a hook that blocks any shell command carrying a mutation to an Admin API, as a backstop.
-
-The token lives in the environment (`SHOPIFY_STORE`, `SHOPIFY_ACCESS_TOKEN`) and is set by the merchant or the user, never pasted into chat, a file, or the report.
 
 ## Method
 
