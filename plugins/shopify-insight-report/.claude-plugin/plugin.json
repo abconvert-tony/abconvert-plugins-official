@@ -1,0 +1,8 @@
+{
+  "name": "shopify-insight-report",
+  "version": "1.0.0",
+  "description": "Builds a merchant-facing insight report from a store's own Shopify analytics (ShopifyQL): finds when a metric broke, which funnel step and segment moved, and whether a suspected change caused it.",
+  "author": {
+    "name": "ABConvert"
+  }
+}

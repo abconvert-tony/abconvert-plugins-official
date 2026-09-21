@@ -32,6 +32,9 @@ claude plugin install ralph-wiggum@abconvert-plugins
 
 # Install for current project only
 claude plugin install ralph-wiggum@abconvert-plugins --scope project
+
+# Shopify insight report skill
+claude plugin install shopify-insight-report@abconvert-plugins
 ```
 
 **Using Claude Code directly:**
@@ -121,6 +124,36 @@ To exit the loop, Claude must output the exact promise text in XML tags:
 ```
 
 The promise must be **genuinely true** - Claude cannot lie to escape the loop.
+
+---
+
+### Shopify Insight Report
+
+A skill that answers one merchant question with the merchant's own Shopify data: what changed, when, and was it the thing they suspect? It works with a suspect ("sales dropped since the theme publish") or without one ("CVR dropped in the last 30 days and we can't figure out why").
+
+**Requires:** the Shopify MCP connected to the store (for `run-analytics-query`), and a Claude client that can publish HTML artifacts.
+
+**How it works:**
+1. Asks for the claim verbatim and any known changes, then builds an event timeline in store-local time
+2. Loads the ShopifyQL docs for each dataset and test-runs every query before the full pull
+3. Establishes a 4 to 8 week baseline as a range, and splits a conversion-rate claim into sessions and orders
+4. Finds the funnel step that moved, the day, then the hour (4-hour bins)
+5. Segments by channel, device, country, and landing page to tell storewide changes from targeted ones
+6. Checks the suspect's own mechanism (page speed for a theme or app change, checkout completion for a shipping change)
+
+**Output:** a verdict-first HTML report. Three conclusions at the top, a timeline, one exhibit per question with a chart, a Fact paragraph, an Interpretation paragraph, and the copyable ShopifyQL that produced it, so the merchant can re-run every number in the ShopifyQL editor in Shopify Analytics.
+
+**Trigger it with prompts like:**
+
+```
+Our conversion rate dropped about 30% over the last month and nobody knows why. Can you look at the store and tell me what happened?
+```
+
+```
+The merchant thinks the A/B test we launched on Sep 6 killed their sales. Check whether it did.
+```
+
+The skill triggers on its own when a conversation mentions a drop in conversion, sales, AOV, or traffic on a Shopify store. It contains no store data; the report template ships with placeholders only.
 
 ---
 
