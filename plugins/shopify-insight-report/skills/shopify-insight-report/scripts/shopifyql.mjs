@@ -18,10 +18,16 @@
 //   node scripts/shopifyql.mjs --csv "<query>"  # CSV instead of JSON
 //
 // The token comes from the environment, never from a chat message or a file
-// in the report. Set SHOPIFY_API_VERSION to override the default version.
+// in the report: either SHOPIFY_ACCESS_TOKEN, or SHOPIFY_ACCESS_TOKEN_CMD, a
+// command that prints it (a password-manager or keychain lookup), so no command
+// the agent writes ever contains the secret. Set SHOPIFY_API_VERSION to
+// override the default version.
+
+import { execSync } from 'node:child_process';
 
 const STORE = process.env.SHOPIFY_STORE;
-const TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+let TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const TOKEN_CMD = process.env.SHOPIFY_ACCESS_TOKEN_CMD;
 const VERSION = process.env.SHOPIFY_API_VERSION || '2026-07';
 
 const args = process.argv.slice(2);
@@ -47,7 +53,16 @@ function fail(msg, code = 1) {
   process.exit(code);
 }
 
-if (!STORE || !TOKEN) fail('set SHOPIFY_STORE (xxx.myshopify.com) and SHOPIFY_ACCESS_TOKEN in the environment');
+if (!TOKEN && TOKEN_CMD) {
+  // A command that prints the token, e.g. `op read 'op://Clients/Acme/shopify-token'`.
+  // The secret never appears in a command the agent writes; only the lookup does.
+  try {
+    TOKEN = execSync(TOKEN_CMD, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000 }).trim();
+  } catch (err) {
+    fail(`SHOPIFY_ACCESS_TOKEN_CMD failed: ${err.stderr?.toString().trim() || err.message}`);
+  }
+}
+if (!STORE || !TOKEN) fail('set SHOPIFY_STORE (xxx.myshopify.com) and SHOPIFY_ACCESS_TOKEN (or SHOPIFY_ACCESS_TOKEN_CMD) in the environment');
 if (!checkOnly && !shopOnly && !query) fail('pass a ShopifyQL query string, --check, or --shop');
 
 async function graphql(document, variables) {

@@ -21,7 +21,7 @@ Copy this into the response and check items off. Steps are ordered because each 
 ```
 - [ ] Intake: claim verbatim, known events, activity log access, data path confirmed
 - [ ] 1. Event timeline in store-local time
-- [ ] 2. Field names checked for each dataset; every query test-run with LIMIT 5
+- [ ] 2. Field names checked against the official docs; every query test-run with LIMIT 5
 - [ ] 3. Baseline range (4 to 8 weeks); CVR split into sessions and orders if the claim is a rate
 - [ ] 4. Funnel step that moved; break day; break hour (4-hour bins)
 - [ ] 5. Segments: storewide or one channel / device / country / landing page
@@ -53,7 +53,7 @@ Without a suspect the timeline starts with only the merchant's date. Step 4 adds
 
 ### 2. Field names, then validate
 
-ShopifyQL field names are not guessable and differ by dataset (`referring_channel` on `sales`, `referrer_source` on `sessions`). Start from the query pack in `references/shopifyql.md`. When you can reach the web, confirm against the dataset's schema page at `shopify.dev/docs/api/shopifyql/latest/schemas/`, through a Shopify docs MCP tool if one is connected or by fetching the page; the docs win on any conflict. Run each query once with `LIMIT 5` before the full pull, because a parse error is cheap and a wrong field silently returning zeros is not. On the manual path, send the merchant the `LIMIT 5` version of a query first if you are unsure it parses.
+ShopifyQL field names are not guessable and differ by dataset (`referring_channel` on `sales`, `referrer_source` on `sessions`). Start from the query pack in `references/shopifyql.md`; for any field a pack query doesn't already use, read Shopify's official page for that dataset. The pack lists the page links (append `.md` to any shopify.dev URL for plain markdown), and `python3 scripts/fetch-docs.py` downloads them all for offline reading. The docs win on any conflict. Run each query once with `LIMIT 5` before the full pull, because a parse error is cheap and a wrong field silently returning zeros is not. On the manual path, send the merchant the `LIMIT 5` version of a query first if you are unsure it parses.
 
 ### 3. Baseline
 

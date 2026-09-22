@@ -21,7 +21,10 @@ Usage:
   python3 scripts/shopifyql.py --csv "<query>"  # CSV instead of JSON
 
 The token comes from the environment, never from a chat message or a file
-in the report. Set SHOPIFY_API_VERSION to override the default version.
+in the report: either SHOPIFY_ACCESS_TOKEN, or SHOPIFY_ACCESS_TOKEN_CMD, a
+command that prints it (a password-manager or keychain lookup), so no command
+the agent writes ever contains the secret. Set SHOPIFY_API_VERSION to
+override the default version.
 """
 import csv
 import json
@@ -33,6 +36,7 @@ import urllib.request
 
 STORE = os.environ.get("SHOPIFY_STORE")
 TOKEN = os.environ.get("SHOPIFY_ACCESS_TOKEN")
+TOKEN_CMD = os.environ.get("SHOPIFY_ACCESS_TOKEN_CMD")
 VERSION = os.environ.get("SHOPIFY_API_VERSION", "2026-07")
 
 args = sys.argv[1:]
@@ -59,8 +63,18 @@ def fail(msg, code=1):
     sys.exit(code)
 
 
+if not TOKEN and TOKEN_CMD:
+    # A command that prints the token, e.g. `op read 'op://Clients/Acme/shopify-token'`
+    # or `security find-generic-password -s shopify-token -w`. The secret never
+    # appears in a command the agent writes; only the lookup does.
+    import subprocess
+
+    try:
+        TOKEN = subprocess.run(TOKEN_CMD, shell=True, capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        fail(f"SHOPIFY_ACCESS_TOKEN_CMD failed: {getattr(e, 'stderr', '') or e}")
 if not STORE or not TOKEN:
-    fail("set SHOPIFY_STORE (xxx.myshopify.com) and SHOPIFY_ACCESS_TOKEN in the environment")
+    fail("set SHOPIFY_STORE (xxx.myshopify.com) and SHOPIFY_ACCESS_TOKEN (or SHOPIFY_ACCESS_TOKEN_CMD) in the environment")
 if not check_only and not shop_only and not query:
     fail("pass a ShopifyQL query string, --check, or --shop")
 

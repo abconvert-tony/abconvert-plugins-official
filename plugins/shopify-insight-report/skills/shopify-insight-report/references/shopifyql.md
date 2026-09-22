@@ -2,18 +2,39 @@
 
 ## Contents
 
+- Official documentation (read these, not a paraphrase)
 - Datasets used
 - Baseline (step 3)
 - Conversion rate claims (step 3)
 - Locate the hour (step 4)
 - Segment (step 5)
 - Rule the suspect in or out (step 6)
-- Field notes
-- Running queries (MCP, token path and its read-only guarantees)
+- Observed behaviour the docs don't state
+- Running queries (MCP, token path and its read-only guarantees, passing the token, manual export)
 
-Queries that ran cleanly in past reports. Dates are placeholders from one report; replace them. Field names are the ones the docs listed on 2026-09-16; re-check against `search_docs_chunks` (dataset name + fields) before use, because datasets gain and rename fields between API versions. Docs win over this file.
+## Official documentation
 
-Syntax reminders: `FROM <dataset> SHOW <metrics> [WHERE ...] [GROUP BY <dims> | TIMESERIES <grain>] SINCE <date> UNTIL <date> [ORDER BY ...] [LIMIT n]`. `TIMESERIES` fills empty periods with zero rows; `GROUP BY day` does not. `UNTIL` is exclusive of the day named. `COMPARE TO previous_period` and `WITH PERCENT_CHANGE` exist but the report computes comparisons itself so the chart can carry the event markers.
+Shopify documents every dataset, field, and clause. Read the official page for anything not covered by a query below; do not guess a field name. Append `.md` to any shopify.dev URL to get the page as plain markdown with the API version in its frontmatter.
+
+| What | Official page |
+|---|---|
+| Syntax overview | https://shopify.dev/docs/api/shopifyql/latest/syntax.md |
+| FROM and SHOW | https://shopify.dev/docs/api/shopifyql/latest/syntax/from-and-show.md |
+| WHERE | https://shopify.dev/docs/api/shopifyql/latest/syntax/where.md |
+| GROUP BY | https://shopify.dev/docs/api/shopifyql/latest/syntax/group-by.md |
+| TIMESERIES | https://shopify.dev/docs/api/shopifyql/latest/syntax/timeseries.md |
+| SINCE, UNTIL, DURING | https://shopify.dev/docs/api/shopifyql/latest/syntax/since-until-during.md |
+| ORDER BY, LIMIT, HAVING | https://shopify.dev/docs/api/shopifyql/latest/syntax/order-by.md, .../limit.md, .../having.md |
+| COMPARE TO, WITH | https://shopify.dev/docs/api/shopifyql/latest/syntax/compare-to.md, .../with.md |
+| All datasets | https://shopify.dev/docs/api/shopifyql/latest/schemas.md |
+| `sales` fields | https://shopify.dev/docs/api/shopifyql/latest/schemas/sales_revenue/sales.md |
+| `discounts` fields | https://shopify.dev/docs/api/shopifyql/latest/schemas/sales_revenue/discounts.md |
+| `sessions` fields | https://shopify.dev/docs/api/shopifyql/latest/schemas/sessions_and_behavior/sessions.md |
+| `web_performance` fields | https://shopify.dev/docs/api/shopifyql/latest/schemas/sessions_and_behavior/web_performance.md |
+
+Three ways to read them, pick whichever the client has: a web fetch tool on the URL above; a Shopify docs MCP tool (Shopify's own connector exposes `search_docs_chunks`); or `python3 scripts/fetch-docs.py`, which downloads all of the pages above into `references/shopifyql-docs/` for offline reading. That folder is not committed, since the pages are Shopify's; each user fetches their own copy.
+
+The queries below ran cleanly on a real store; dates are placeholders from one report. If a query and the docs disagree, the docs win.
 
 ## Datasets used
 
@@ -137,15 +158,18 @@ FROM sales
   TIMESERIES day SINCE 2026-08-01 UNTIL 2026-09-17 ORDER BY day ASC
 ```
 
-## Field notes
+## Observed behaviour the docs don't state
 
-- `sessions_with_cart_additions`, `sessions_that_reached_checkout`, `sessions_that_completed_checkout` are session counts, not event counts. A session counts once per step no matter how many times it repeats the action.
-- `conversion_rate` on `sessions` is completed checkouts over sessions, as a percentage.
-- `online_store_visitors` is unique visitors; `sessions` can be higher.
-- `total_sales` includes shipping and taxes and subtracts returns; `net_sales` excludes shipping and taxes. Say which one the chart shows.
-- `orders` on `sales` includes POS, Shop app, and draft orders; `sales_channel` separates them.
-- `web_performance` metrics are p75 of real visitors (CrUX-style), not lab scores. `page_path` is the path without query string. Days with too few loads return no row for that page.
-- `human_or_bot_session` exists only on `sessions`; `sales` has no bot dimension.
+Everything about what a field means is in the official pages above. These are things the pages don't say, seen on real stores:
+
+- `TIMESERIES hour` rows come back in UTC through the API even though day rows are store-local. Shift before binning.
+- The current day is a partial row. Keep it out of averages and label it.
+- `web_performance` lags about two days; the last two days are missing rows, not zeros.
+- `GROUP BY day, <dimension>` without an explicit `LIMIT` cuts the tail silently. 3000 covers 60 days by a dimension with up to 50 values.
+- `web_performance` returns no row for a page on days with too few loads, rather than a row with nulls.
+- `sessions_that_reached_checkout / sessions_with_cart_additions` can exceed 1 (saved carts, Buy it now, abandoned-checkout email links). Present it as a before-and-after signal, not a rate.
+- `referrer_*` on `sessions` and `referring_channel` / `order_referrer_*` on `sales` are different taxonomies; do not join them by value.
+- The report computes its own comparisons instead of using `COMPARE TO` or `WITH PERCENT_CHANGE`, so every chart can carry the event markers on one axis.
 
 ## Running queries
 
@@ -171,5 +195,16 @@ With a token, the skill only ever queries. It never runs a mutation, and that is
 - **No raw GraphQL from the shell.** Never write a `curl` or `fetch` against `/admin/api/` yourself; every query goes through a script. In Claude Code, the plugin also ships a hook that blocks any shell command carrying a mutation to an Admin API, as a backstop; other clients rely on the first two layers, which are the strong ones.
 
 The token lives in the environment and is set by the merchant or the user, never pasted into chat, a file, or the report.
+
+### Passing the token
+
+The rule is that no command the agent writes and no output it reads ever contains the secret. In order of preference:
+
+1. **Let the agency create the app.** If the merchant grants the agency's collaborator account "Develop apps", the agency creates the `read_reports`-only custom app in its own browser and the token never travels. Otherwise the merchant shares it through a password manager, never email or chat.
+2. **A lookup command, not a value.** Set `SHOPIFY_ACCESS_TOKEN_CMD` to a command that prints the token and the script runs it itself: `op read 'op://Clients/Acme/shopify-token'` (1Password), `security find-generic-password -s shopify-token -w` (macOS Keychain), `pass show clients/acme/shopify`. The transcript shows the lookup, never the token.
+3. **Export before starting the agent.** `export SHOPIFY_ACCESS_TOKEN=...` in your own terminal, then start `claude` or `codex` from that shell. Child processes inherit it; the agent never sees the value; it dies with the terminal.
+
+Never paste the token into the conversation, a repo, a `.env` inside a repo, or Claude Code's settings file, and never `echo` or `printenv` it. The scripts never print it. ChatGPT has no shell and no outbound network, so the token path does not apply there; use the connector or the CSV path.
+
 
 The ShopifyQL editor in Shopify Analytics accepts the same strings, which is what makes every query in the report reproducible by the merchant.

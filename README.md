@@ -18,7 +18,9 @@ Our conversion rate dropped about 30% over the last month and nobody knows why.
 Can you look at the store and tell me what happened?
 ```
 
-**Store access, one of three.** A Shopify MCP connected to the store (Shopify's official Claude and ChatGPT connectors work, and an agency's collaborator account with only Reports and Dashboards permissions is enough). Or a read-only Admin API token, which the bundled script refuses to use if it carries any write scope. Or CSV exports the merchant makes from Shopify's ShopifyQL editor, for clients with no network. The skill never runs a mutation on any path.
+**Docs.** The skill links Shopify's official ShopifyQL pages for every dataset and clause and reads those, rather than a paraphrase. A bundled script downloads them for offline use; they are not redistributed.
+
+**Store access, one of three.** A Shopify MCP connected to the store (Shopify's official Claude and ChatGPT connectors work, and an agency's collaborator account with only Reports and Dashboards permissions is enough). Or a read-only Admin API token, which the bundled script refuses to use if it carries any write scope. Or CSV exports the merchant makes from Shopify's ShopifyQL editor, for clients with no network. The skill never runs a mutation on any path. On the token path the secret stays out of the chat: set `SHOPIFY_ACCESS_TOKEN_CMD` to a password-manager or keychain lookup and the script fetches it itself, or export the token in your terminal before starting the agent.
 
 ### Install
 
