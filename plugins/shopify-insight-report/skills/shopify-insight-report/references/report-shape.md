@@ -72,4 +72,6 @@ Three tiles, always. If you have two conclusions, the third is the action. If yo
 
 ## Publishing
 
-The page is self-contained HTML with fonts from Google Fonts and nothing else external, so it opens in any browser. In a client with artifacts or pages, publish it there and send the link. Otherwise save it as `report.html` and hand the file over. Title is the h1. If the client asks for a description, one sentence: what the report concludes.
+Before publishing, check that every number in a tile appears in an exhibit's Fact paragraph and comes from the query beside it; that hour rows were shifted to store-local and the footer says by how much; that the current day is labelled partial and excluded from averages; that the timeline and every daily chart carry the same event markers; and that no `{{...}}` placeholder remains.
+
+The page is self-contained HTML with fonts from Google Fonts and nothing else external, so it opens in any browser. In a client with artifacts or pages, publish it there and send the link. Otherwise save it as `report.html` and hand the file over. Title is the h1.

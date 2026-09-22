@@ -9,7 +9,7 @@ cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.st
 [ -z "$cmd" ] && exit 0
 if printf '%s' "$cmd" | grep -qiE '(/admin/api/|myshopify\.com|X-Shopify-Access-Token)' \
    && printf '%s' "$cmd" | grep -qE '(^|[^A-Za-z_])mutation([^A-Za-z_]|$)'; then
-  echo "Blocked: this command sends a GraphQL mutation to a Shopify Admin API. The shopify-insight-report skill is read-only; run ShopifyQL through scripts/shopifyql.mjs instead." >&2
+  echo "Blocked: this command sends a GraphQL mutation to a Shopify Admin API. The shopify-insight-report skill is read-only; run ShopifyQL through scripts/shopifyql.py instead." >&2
   exit 2
 fi
 exit 0
