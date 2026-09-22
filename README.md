@@ -1,200 +1,87 @@
-# ABConvert Plugins Marketplace
+# ABConvert Plugins
 
-Official Claude Code plugin marketplace by [ABConvert](https://github.com/ABConvert).
+Skills and plugins by [ABConvert](https://github.com/ABConvert). Each skill is a standard `SKILL.md` folder, so it runs in Claude, Claude Code, ChatGPT, and Codex.
 
-## Installation
+| Skill | Use it when |
+|---|---|
+| [Shopify Insight Report](#shopify-insight-report) | A Shopify store's conversion, sales, or traffic changed and nobody knows why |
+| [Ralph Wiggum](#ralph-wiggum) | You want Claude Code to loop on a task until it is genuinely done |
 
-### 1. Add the marketplace
+## Shopify Insight Report
 
-**Using CLI:**
+A merchant, a prospect, or your own client says "CVR dropped 30% this month and we can't figure out why", or "sales have been down since we published the new theme". This skill answers with the store's own Shopify analytics: it finds the day and hour the metric broke, which funnel step and segment moved, and whether the suspected change could have caused it. Any change can be the suspect: theme, app, checkout, shipping, price, discount, campaign, migration, or A/B test.
+
+The output is a one-page HTML report. Three conclusions at the top, a timeline, and one chart per question with the ShopifyQL query beside it, so the merchant can re-run every number in Shopify Analytics.
+
+```
+Our conversion rate dropped about 30% over the last month and nobody knows why.
+Can you look at the store and tell me what happened?
+```
+
+**Store access, one of three.** A Shopify MCP connected to the store (Shopify's official Claude and ChatGPT connectors work, and an agency's collaborator account with only Reports and Dashboards permissions is enough). Or a read-only Admin API token, which the bundled script refuses to use if it carries any write scope. Or CSV exports the merchant makes from Shopify's ShopifyQL editor, for clients with no network. The skill never runs a mutation on any path.
+
+### Install
+
+**Claude Code**
+
 ```bash
 claude plugin marketplace add ABConvert/abconvert-plugins-official
-```
-
-**Using Claude Code directly:**
-```
-/plugin marketplace add ABConvert/abconvert-plugins-official
-```
-
-### 2. Install plugins
-
-Plugins can be installed in different scopes:
-
-| Scope | Description |
-|-------|-------------|
-| `user` | Available in all your Claude Code sessions (default) |
-| `project` | Only available in the current project |
-
-**Using CLI:**
-```bash
-# Install for user (default)
-claude plugin install ralph-wiggum@abconvert-plugins
-
-# Install for current project only
-claude plugin install ralph-wiggum@abconvert-plugins --scope project
-
-# Shopify insight report skill
 claude plugin install shopify-insight-report@abconvert-plugins
 ```
 
-**Using Claude Code directly:**
+Add `--scope project` to limit it to the current repo. This is the only client that also gets the plugin's hook, which blocks any shell command carrying a GraphQL mutation to a Shopify Admin API.
+
+**Claude (claude.ai)**
+
+Zip the skill folder so `SKILL.md` is at the zip root, then upload it under Skills, Create skill. Needs a plan with code execution enabled. [Help article.](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)
+
+```bash
+git clone https://github.com/ABConvert/abconvert-plugins-official
+cd abconvert-plugins-official/plugins/shopify-insight-report/skills
+zip -r shopify-insight-report.zip shopify-insight-report
 ```
-# Install for user (default)
-/plugin install ralph-wiggum@abconvert-plugins
 
-# Install for current project only
-/plugin install ralph-wiggum@abconvert-plugins --scope project
+**ChatGPT**
+
+Same zip. Upload it under Skills, Create, Upload from your computer, then @-mention `shopify-insight-report` in a chat or add it to a Project. ChatGPT reads the same `SKILL.md` format. [Help article.](https://help.openai.com/en/articles/20001066-skills-in-chatgpt) ChatGPT's sandbox has no outbound network, so use the connector or the CSV path there.
+
+**Codex**
+
+Copy the folder into Codex's skills directory. It shows up in `/skills` without a restart.
+
+```bash
+git clone https://github.com/ABConvert/abconvert-plugins-official /tmp/abc-plugins
+cp -r /tmp/abc-plugins/plugins/shopify-insight-report/skills/shopify-insight-report ~/.codex/skills/
 ```
 
----
+Put it in `.agents/skills/` inside a repo instead to share it with that repo's collaborators.
 
-## Available Plugins
+## Ralph Wiggum
 
-### Ralph Wiggum
+Runs Claude Code on the same prompt repeatedly until the task is genuinely complete: a stop hook feeds the prompt back, and Claude sees its own previous work in the files and git history. Best for well-defined tasks with automatic verification, such as "fix all TypeScript errors". Details, options, and the completion-promise mechanism are in [the plugin's README](plugins/ralph-wiggum/README.md).
 
-An iterative development loop that runs Claude with the same prompt repeatedly until task completion. Based on the [Ralph Wiggum technique](https://github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum) pioneered by Geoffrey Huntley.
-
-**How it works:**
-1. You provide a prompt and completion criteria
-2. Claude works on the task and attempts to exit
-3. A stop hook feeds the same prompt back
-4. Claude sees its previous work in files/git history
-5. Loop continues until the task is genuinely complete
-
-**Best for:**
-- Well-defined tasks with clear success criteria
-- Tasks requiring iteration and refinement
-- Greenfield projects you can walk away from
-- Tasks with automatic verification (tests, linters)
-
-**Not recommended for:**
-- Tasks requiring human judgment
-- One-shot operations
-- Unclear success criteria
-
-### Commands
+```bash
+claude plugin marketplace add ABConvert/abconvert-plugins-official
+claude plugin install ralph-wiggum@abconvert-plugins
+```
 
 | Command | Description |
-|---------|-------------|
-| `/ralph-wiggum:help` | Show help documentation |
-| `/ralph-wiggum:ralph-loop` | Start a Ralph loop |
-| `/ralph-wiggum:cancel-ralph` | Cancel an active loop |
+|---|---|
+| `/ralph-wiggum:ralph-loop "<prompt>" --max-iterations 20` | Start a loop |
+| `/ralph-wiggum:cancel-ralph` | Cancel the active loop |
+| `/ralph-wiggum:help` | Show help |
 
-### Usage Examples
-
-```bash
-# Basic loop with iteration limit
-/ralph-wiggum:ralph-loop "Build a REST API for todos" --max-iterations 20
-
-# Loop with completion promise
-/ralph-wiggum:ralph-loop "Fix all TypeScript errors" --completion-promise "All tests passing"
-
-# Combined options
-/ralph-wiggum:ralph-loop "Refactor auth module" --max-iterations 50 --completion-promise "DONE"
-
-# Cancel an active loop
-/ralph-wiggum:cancel-ralph
-```
-
-### Autonomous Mode (No Approval Prompts)
-
-For fully autonomous loops where you don't want to approve each action, start Claude Code with the `--dangerously-skip-permissions` flag:
-
-```bash
-# Start Claude Code in autonomous mode
-claude --dangerously-skip-permissions
-
-# Then run your ralph loop
-/ralph-wiggum:ralph-loop "Build a REST API" --completion-promise "DONE" --max-iterations 50
-```
-
-**Use cases for autonomous mode:**
-- Overnight/background tasks you can walk away from
-- Well-defined tasks with automatic verification (tests, linters)
-- Greenfield projects with clear completion criteria
-
-**Warning:** This skips all permission prompts. Only use in trusted environments with well-defined tasks and iteration limits.
-
-### Completion Promise
-
-To exit the loop, Claude must output the exact promise text in XML tags:
-
-```
-<promise>YOUR_PROMISE_TEXT</promise>
-```
-
-The promise must be **genuinely true** - Claude cannot lie to escape the loop.
-
----
-
-### Shopify Insight Report
-
-A skill that answers one merchant question with the merchant's own Shopify data: what changed, when, and was it the thing they suspect? It works with a suspect ("sales dropped since the theme publish") or without one ("CVR dropped in the last 30 days and we can't figure out why"). Any store change can be the suspect: a theme publish, an app install, a checkout or shipping change, a price or discount change, a campaign, a migration, or an A/B test.
-
-**Runs anywhere skills run.** The skill folder follows the open Agent Skills format, so it works in Claude Code (as this plugin), in Claude.ai, and in any other client that loads `SKILL.md` folders, such as Codex. It assumes nothing about the machine: no repo, no database, no build step. Copy `plugins/shopify-insight-report/skills/shopify-insight-report/` into your client's skills directory if you are not on Claude Code.
-
-**Data path, one of three:**
-1. A Shopify MCP connected to the store
-2. A read-only Admin API access token (a custom app with `read_reports` only), exported as `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN`, used through the bundled script (`scripts/shopifyql.py`, standard library, or `scripts/shopifyql.mjs`, Node 18+)
-3. CSV exports the merchant makes from Shopify's ShopifyQL editor, for clients with no network or no MCP
-
-**Read-only by construction.** With a token, the skill never runs a mutation, and that is enforced rather than promised: the token should carry no `write_*` scope, so Shopify rejects writes; the bundled scripts send only fixed query documents and exit before querying if the token has any write scope; and in Claude Code the plugin's PreToolUse hook blocks any shell command that carries a GraphQL mutation to a Shopify Admin API. Other clients rely on the first two layers, which are the strong ones.
-
-**How it works:**
-1. Asks for the claim verbatim and any known changes, then builds an event timeline in store-local time
-2. Confirms field names for each dataset and test-runs every query before the full pull
-3. Establishes a 4 to 8 week baseline as a range, and splits a conversion-rate claim into sessions and orders
-4. Finds the funnel step that moved, the day, then the hour (4-hour bins)
-5. Segments by channel, device, country, and landing page to tell storewide changes from targeted ones
-6. Checks the suspect's own mechanism (page speed for a theme or app change, checkout completion for a shipping change)
-
-**Output:** a verdict-first HTML report. Three conclusions at the top, a timeline, one exhibit per question with a chart, a Fact paragraph, an Interpretation paragraph, and the copyable ShopifyQL that produced it, so the merchant can re-run every number in the ShopifyQL editor in Shopify Analytics. Self-contained HTML; publish it as an artifact where the client has one, or hand over the file.
-
-**Trigger it with prompts like:**
-
-```
-Our conversion rate dropped about 30% over the last month and nobody knows why. Can you look at the store and tell me what happened?
-```
-
-```
-Sales have been down since we published the new theme on the 6th. Did the theme do it?
-```
-
-The skill triggers on its own when a conversation mentions a drop in conversion, sales, AOV, or traffic on a Shopify store. It contains no store data; the report template ships with placeholders only.
-
----
+This copy carries the fixes from [anthropics/claude-code#12642](https://github.com/anthropics/claude-code/pull/12642) for [issue #12170](https://github.com/anthropics/claude-code/issues/12170).
 
 ## Uninstall
 
-**Using CLI:**
 ```bash
-# Remove a plugin
+claude plugin uninstall shopify-insight-report@abconvert-plugins
 claude plugin uninstall ralph-wiggum@abconvert-plugins
-
-# Remove the marketplace
 claude plugin marketplace remove abconvert-plugins
 ```
 
-**Using Claude Code directly:**
-```
-# Remove a plugin
-/plugin uninstall ralph-wiggum@abconvert-plugins
-
-# Remove the marketplace
-/plugin marketplace remove abconvert-plugins
-```
-
----
-
-## Bug Fixes
-
-This version includes fixes from [PR #12642](https://github.com/anthropics/claude-code/pull/12642) addressing [issue #12170](https://github.com/anthropics/claude-code/issues/12170):
-
-- Fixed multi-line bash command blocking by security check
-- Fixed permission check bug with auto-execute syntax
-- Added clearer completion promise instructions
-
----
+For Claude, ChatGPT, and Codex, delete the skill from the Skills page or the skills directory.
 
 ## Contributing
 
