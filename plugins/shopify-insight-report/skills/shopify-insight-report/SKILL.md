@@ -65,7 +65,7 @@ Then `TIMESERIES hour` over the break day plus two on each side, binned to 4 hou
 
 Without a suspect, put the hour in front of the merchant first and run this step on what they name.
 
-**6. Report.** Build from `assets/report-template.html`; structure and copy rules are in `references/report-shape.md`. Three conclusions at the top, a timeline, one exhibit per question with its chart, Fact, Interpretation, and query. Publish as an artifact or page where the client has one, otherwise save `report.html`. It holds a merchant's sales figures: share it with the merchant only, never commit it.
+**6. Report.** Build from `assets/report-template.html`; structure and writing rules are in `references/report-shape.md`. Three conclusions at the top, a timeline, one exhibit per question with its chart, Fact, Interpretation, and query. Publish as an artifact or page where the client has one, otherwise save `report.html`. It holds a merchant's sales figures: share it with the merchant only, never commit it.
 
 ## Traps
 

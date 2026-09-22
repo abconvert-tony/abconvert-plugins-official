@@ -38,6 +38,16 @@ Footer
 
 Exhibit order for a "did X do this" report: the headline metric first (sales), then the exoneration (the suspect's mechanism, page speed for anything that touched the theme), then the observation (funnel step that broke), then the localization (hour), then segments if they add attribution. With no suspect, drop the exoneration exhibit and put the segment cut that attributes the break in its place. The example ran the channel and device queries (they are in its `QUERIES`) but published no segment exhibit: the test targeted Facebook visitors only, while the funnel break was storewide, and the timeline carries that contrast.
 
+## Writing
+
+Ranked. When two rules pull in different directions, the higher one wins.
+
+1. **Every statement comes from the data.** A sentence goes in only if it traces to rows the query beside it returned. That covers causes as much as counts: "the checkout changed" is a finding only when a checkout metric moved. Anything the data cannot show is written under What to check, never as a fact.
+2. **Read once, top to bottom.** The merchant reads the tiles, then down the page, and never scrolls back. Explain every term, ratio, and event the first time it appears, before it is used: define "reached checkout over added to cart" in the exhibit that first plots it, not in the footer. A sentence that needs a later section to make sense is in the wrong place.
+3. **A chart earns its place by carrying a finding.** Each chart supports one sentence in a tile or a Fact paragraph. A chart that only shows more data pulls attention from the one that matters, so drop it and keep its query in the footer if the merchant may want it. Three or four charts is normal; eight means the argument is not yet clear.
+4. **Shopify's words.** Use the names the merchant sees in Shopify Analytics: sessions, orders, conversion rate, added to cart, reached checkout, completed checkout, average order value, online store, sales channel, referrer source, discount. Not "funnel stage", "traffic", or an abbreviation the admin does not show. When a ShopifyQL field must appear, it sits in `mono` next to the plain words.
+5. **Short, plain sentences.** One idea per sentence, common words, no adjectives; the numbers carry the weight. A merchant reading on a phone between other tasks should get each sentence on the first pass.
+
 ## Tiles
 
 Each tile is one sentence in the `v` slot and two or three sentences of numbers in the `s` slot. The `v` sentence must be true on its own without the numbers. "Cart-to-checkout dropped on Sep 11. Check what changed" is a tile. "Interesting pattern in the checkout funnel" is not.
