@@ -10,8 +10,7 @@ read-only by construction:
      any `write_*` scope is present. A token that can write is the wrong
      token for an analytics job, whoever holds it.
 
-Standard library only; runs anywhere python3 runs. `scripts/shopifyql.mjs`
-is the same tool for environments that have Node instead.
+Standard library only; runs anywhere python3 runs.
 
 Usage:
   SHOPIFY_STORE=example.myshopify.com SHOPIFY_ACCESS_TOKEN=shpat_... \\
@@ -108,7 +107,7 @@ def graphql(document, variables=None):
             fail(
                 "this Python has no CA certificates (common with python.org installs on macOS). "
                 "Fix with `pip3 install certifi`, or run `Install Certificates.command` from the Python "
-                "folder in /Applications, or use scripts/shopifyql.mjs with Node instead."
+                "folder in /Applications."
             )
         fail(f"cannot reach {STORE}: {e.reason}. Check SHOPIFY_STORE (it should end in .myshopify.com).")
     if body.get("errors"):
