@@ -51,11 +51,17 @@ if (!STORE || !TOKEN) fail('set SHOPIFY_STORE (xxx.myshopify.com) and SHOPIFY_AC
 if (!checkOnly && !shopOnly && !query) fail('pass a ShopifyQL query string, --check, or --shop');
 
 async function graphql(document, variables) {
-  const res = await fetch(`https://${STORE}/admin/api/${VERSION}/graphql.json`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': TOKEN },
-    body: JSON.stringify({ query: document, variables }),
-  });
+  let res;
+  try {
+    res = await fetch(`https://${STORE}/admin/api/${VERSION}/graphql.json`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': TOKEN },
+      body: JSON.stringify({ query: document, variables }),
+    });
+  } catch (err) {
+    fail(`cannot reach ${STORE}: ${err.cause?.code || err.cause?.message || err.message}. Check SHOPIFY_STORE (it should end in .myshopify.com).`);
+  }
+  if (res.status === 401 || res.status === 403) fail(`HTTP ${res.status} from ${STORE}: the token was rejected. Check SHOPIFY_ACCESS_TOKEN and that the custom app is installed on this store.`);
   if (!res.ok) fail(`HTTP ${res.status} from ${STORE}`);
   const body = await res.json();
   if (body.errors?.length) fail(body.errors.map((e) => e.message).join('; '));
