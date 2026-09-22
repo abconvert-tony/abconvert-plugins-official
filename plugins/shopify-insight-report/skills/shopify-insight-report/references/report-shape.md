@@ -72,4 +72,4 @@ Three tiles, always. If you have two conclusions, the third is the action. If yo
 
 ## Publishing
 
-Load `artifact-design` before writing, publish with the Artifact tool, and send the link. Title is the h1. Description is one sentence: what the report concludes.
+The page is self-contained HTML with fonts from Google Fonts and nothing else external, so it opens in any browser. In a client with artifacts or pages, publish it there and send the link. Otherwise save it as `report.html` and hand the file over. Title is the h1. If the client asks for a description, one sentence: what the report concludes.

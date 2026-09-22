@@ -129,21 +129,26 @@ The promise must be **genuinely true** - Claude cannot lie to escape the loop.
 
 ### Shopify Insight Report
 
-A skill that answers one merchant question with the merchant's own Shopify data: what changed, when, and was it the thing they suspect? It works with a suspect ("sales dropped since the theme publish") or without one ("CVR dropped in the last 30 days and we can't figure out why").
+A skill that answers one merchant question with the merchant's own Shopify data: what changed, when, and was it the thing they suspect? It works with a suspect ("sales dropped since the theme publish") or without one ("CVR dropped in the last 30 days and we can't figure out why"). Any store change can be the suspect: a theme publish, an app install, a checkout or shipping change, a price or discount change, a campaign, a migration, or an A/B test.
 
-**Requires:** either the Shopify MCP connected to the store, or a read-only Admin API access token (a custom app with `read_reports`) exported as `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN`; and a Claude client that can publish HTML artifacts.
+**Runs anywhere skills run.** The skill folder follows the open Agent Skills format, so it works in Claude Code (as this plugin), in Claude.ai, and in any other client that loads `SKILL.md` folders, such as Codex. It assumes nothing about the machine: no repo, no database, no build step. Copy `plugins/shopify-insight-report/skills/shopify-insight-report/` into your client's skills directory if you are not on Claude Code.
 
-**Read-only by construction.** With a token, the skill never runs a mutation, and that is enforced in three places rather than promised in a prompt: the token should carry no `write_*` scope, so Shopify rejects writes; the bundled `scripts/shopifyql.mjs` sends only fixed query documents and exits before querying if the token has any write scope; and the plugin's PreToolUse hook blocks any shell command that carries a GraphQL mutation to a Shopify Admin API.
+**Data path, one of three:**
+1. A Shopify MCP connected to the store
+2. A read-only Admin API access token (a custom app with `read_reports` only), exported as `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN`, used through the bundled script (`scripts/shopifyql.py`, standard library, or `scripts/shopifyql.mjs`, Node 18+)
+3. CSV exports the merchant makes from Shopify's ShopifyQL editor, for clients with no network or no MCP
+
+**Read-only by construction.** With a token, the skill never runs a mutation, and that is enforced rather than promised: the token should carry no `write_*` scope, so Shopify rejects writes; the bundled scripts send only fixed query documents and exit before querying if the token has any write scope; and in Claude Code the plugin's PreToolUse hook blocks any shell command that carries a GraphQL mutation to a Shopify Admin API. Other clients rely on the first two layers, which are the strong ones.
 
 **How it works:**
 1. Asks for the claim verbatim and any known changes, then builds an event timeline in store-local time
-2. Loads the ShopifyQL docs for each dataset and test-runs every query before the full pull
+2. Confirms field names for each dataset and test-runs every query before the full pull
 3. Establishes a 4 to 8 week baseline as a range, and splits a conversion-rate claim into sessions and orders
 4. Finds the funnel step that moved, the day, then the hour (4-hour bins)
 5. Segments by channel, device, country, and landing page to tell storewide changes from targeted ones
 6. Checks the suspect's own mechanism (page speed for a theme or app change, checkout completion for a shipping change)
 
-**Output:** a verdict-first HTML report. Three conclusions at the top, a timeline, one exhibit per question with a chart, a Fact paragraph, an Interpretation paragraph, and the copyable ShopifyQL that produced it, so the merchant can re-run every number in the ShopifyQL editor in Shopify Analytics.
+**Output:** a verdict-first HTML report. Three conclusions at the top, a timeline, one exhibit per question with a chart, a Fact paragraph, an Interpretation paragraph, and the copyable ShopifyQL that produced it, so the merchant can re-run every number in the ShopifyQL editor in Shopify Analytics. Self-contained HTML; publish it as an artifact where the client has one, or hand over the file.
 
 **Trigger it with prompts like:**
 
@@ -152,7 +157,7 @@ Our conversion rate dropped about 30% over the last month and nobody knows why. 
 ```
 
 ```
-The merchant thinks the A/B test we launched on Sep 6 killed their sales. Check whether it did.
+Sales have been down since we published the new theme on the 6th. Did the theme do it?
 ```
 
 The skill triggers on its own when a conversation mentions a drop in conversion, sales, AOV, or traffic on a Shopify store. It contains no store data; the report template ships with placeholders only.

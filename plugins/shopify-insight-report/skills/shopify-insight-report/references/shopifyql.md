@@ -149,23 +149,27 @@ FROM sales
 
 ## Running queries
 
-**Shopify MCP** (preferred when the store is connected): `run-analytics-query` with the query string; `switch-shop` if several stores are connected. Returns a table and a chart preview. Copy the raw rows into `DATA` in the report; do not retype numbers.
+Three paths, in order of how little setup they need. All three read production analytics; get the user's go-ahead before the first query.
 
-**Access token** (a merchant-provided custom app, or any Admin API token): only through `scripts/shopifyql.mjs`. It sends the fixed `shopifyqlQuery` document and nothing else, and it exits before querying if the token has any `write_*` scope. `--check` prints the scopes; `--csv` prints CSV. Set `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN` in the environment. Reads production data; get the user's go-ahead first.
+**1. A Shopify MCP is connected.** Use its analytics query tool with the query string (in Shopify's own MCP it is `run-analytics-query`; switch store first if several are connected). Copy the raw rows into `DATA` in the report; do not retype numbers.
+
+**2. An access token** (a merchant-issued custom app with `read_reports` only): only through the bundled script, `scripts/shopifyql.py` (standard library) or `scripts/shopifyql.mjs` (Node 18+), which take the same flags. `--check` prints the scopes; `--shop` prints name, timezone, and currency; `--csv` prints CSV. Set `SHOPIFY_STORE` and `SHOPIFY_ACCESS_TOKEN` in the environment.
 
 ```
-node scripts/shopifyql.mjs --check
-node scripts/shopifyql.mjs "FROM sales SHOW orders, total_sales TIMESERIES day SINCE -60d UNTIL today ORDER BY day ASC"
+python3 scripts/shopifyql.py --check
+python3 scripts/shopifyql.py "FROM sales SHOW orders, total_sales TIMESERIES day SINCE -60d UNTIL today ORDER BY day ASC"
 ```
+
+**3. Manual export.** The merchant opens Shopify Analytics, Reports, New exploration, switches to ShopifyQL, pastes a query, and exports the CSV. Send the queries with dates filled in and in method order (baseline first, then funnel, then hourly around the break, then segments), and ask for one CSV per query. Tell them the file names to use so the rows land in the right `DATA` array.
 
 ### Read-only by construction (token path)
 
 With a token, the skill only ever queries. It never runs a mutation, and that is enforced rather than promised:
 
 - **The token cannot write.** Ask the merchant for a custom app with `read_reports` only (Settings, Apps and sales channels, Develop apps). Shopify rejects any mutation from a token without a `write_*` scope, whatever the caller sends.
-- **The script cannot send one.** `scripts/shopifyql.mjs` sends only three fixed GraphQL documents (access scopes, shop info, `shopifyqlQuery`) and passes the ShopifyQL string as a variable, so no input can become a mutation. Before the first query it reads the token's scopes and exits if any `write_*` scope is present, because a token that can write is the wrong token for an analytics job. Run `node scripts/shopifyql.mjs --check` first and show the merchant the scope list.
-- **No raw GraphQL from the shell.** Never write a `curl` or `fetch` against `/admin/api/` yourself; every query goes through the script. This plugin ships a hook that blocks any shell command carrying a mutation to an Admin API, as a backstop.
+- **The script cannot send one.** Both scripts send only three fixed GraphQL documents (access scopes, shop info, `shopifyqlQuery`) and pass the ShopifyQL string as a variable, so no input can become a mutation. Before the first query they read the token's scopes and exit if any `write_*` scope is present, because a token that can write is the wrong token for an analytics job. Run `--check` first and show the merchant the scope list.
+- **No raw GraphQL from the shell.** Never write a `curl` or `fetch` against `/admin/api/` yourself; every query goes through a script. In Claude Code, the plugin also ships a hook that blocks any shell command carrying a mutation to an Admin API, as a backstop; other clients rely on the first two layers, which are the strong ones.
 
-The token lives in the environment (`SHOPIFY_STORE`, `SHOPIFY_ACCESS_TOKEN`) and is set by the merchant or the user, never pasted into chat, a file, or the report.
+The token lives in the environment and is set by the merchant or the user, never pasted into chat, a file, or the report.
 
 The ShopifyQL editor in Shopify Analytics accepts the same strings, which is what makes every query in the report reproducible by the merchant.
