@@ -29,32 +29,35 @@ claude plugin marketplace add ABConvert/abconvert-plugins-official
 claude plugin install shopify-insight-report@abconvert-plugins
 ```
 
-Add `--scope project` to limit it to the current repo. This is the only client that also gets the plugin's hook, which blocks any shell command carrying a GraphQL mutation to a Shopify Admin API.
+Add `--scope project` to limit it to the current repo. This is the only client that also gets the plugin's hook, which blocks any shell command carrying a GraphQL mutation to a Shopify Admin API. Without the marketplace, the open-source [skills CLI](https://github.com/vercel-labs/skills) installs the skill alone:
+
+```bash
+npx skills add ABConvert/abconvert-plugins-official --skill shopify-insight-report -a claude-code
+```
 
 **Claude (claude.ai)**
 
-Zip the skill folder so `SKILL.md` is at the zip root, then upload it under Skills, Create skill. Needs a plan with code execution enabled. [Help article.](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)
+Download [shopify-insight-report.zip](https://github.com/ABConvert/abconvert-plugins-official/releases/latest/download/shopify-insight-report.zip) from the latest release and upload it under Skills, Create skill. Needs a plan with code execution enabled. [Help article.](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills) On a Team or Enterprise plan, one person uploads it and then shares it with colleagues or publishes it to the organisation's skills directory.
+
+**ChatGPT**
+
+Same zip. Upload it under Skills, Create, Upload from your computer, then @-mention `shopify-insight-report` in a chat or add it to a Project. ChatGPT reads the same `SKILL.md` format. [Help article.](https://help.openai.com/en/articles/20001066-skills-in-chatgpt) ChatGPT's sandbox has no outbound network, so use the connector or the CSV path there. Workspace admins can publish it to the whole workspace.
+
+**Codex**
+
+```bash
+npx skills add ABConvert/abconvert-plugins-official --skill shopify-insight-report -a codex
+```
+
+Or copy the folder into `~/.codex/skills/` by hand, or into `.agents/skills/` inside a repo to share it with that repo's collaborators. It shows up in `/skills` without a restart.
+
+**Building the zip yourself** (for a branch that has no release yet):
 
 ```bash
 git clone https://github.com/ABConvert/abconvert-plugins-official
 cd abconvert-plugins-official/plugins/shopify-insight-report/skills
 zip -r shopify-insight-report.zip shopify-insight-report
 ```
-
-**ChatGPT**
-
-Same zip. Upload it under Skills, Create, Upload from your computer, then @-mention `shopify-insight-report` in a chat or add it to a Project. ChatGPT reads the same `SKILL.md` format. [Help article.](https://help.openai.com/en/articles/20001066-skills-in-chatgpt) ChatGPT's sandbox has no outbound network, so use the connector or the CSV path there.
-
-**Codex**
-
-Copy the folder into Codex's skills directory. It shows up in `/skills` without a restart.
-
-```bash
-git clone https://github.com/ABConvert/abconvert-plugins-official /tmp/abc-plugins
-cp -r /tmp/abc-plugins/plugins/shopify-insight-report/skills/shopify-insight-report ~/.codex/skills/
-```
-
-Put it in `.agents/skills/` inside a repo instead to share it with that repo's collaborators.
 
 ## Ralph Wiggum
 
@@ -85,7 +88,7 @@ For Claude, ChatGPT, and Codex, delete the skill from the Skills page or the ski
 
 ## Contributing
 
-Issues and pull requests welcome at [github.com/ABConvert/abconvert-plugins-official](https://github.com/ABConvert/abconvert-plugins-official).
+Issues and pull requests welcome at [github.com/ABConvert/abconvert-plugins-official](https://github.com/ABConvert/abconvert-plugins-official). To cut a release, push a tag such as `v1.1.0`; the release workflow zips every skill folder and attaches the zips to the GitHub release.
 
 ## License
 
